@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Исследование скорости реакции</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --primary: #007bff;
+      --success: #28a745;
+      --danger: #dc2626;
+      --border: #cbd5e1;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 460px;
+    }
+    .screen {
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+    .screen.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      margin: 8px 0 16px;
+    }
+    h2 {
+      font-size: 17px;
+      text-align: center;
+      margin: 8px 0 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #334155;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: transform 0.06s, background-color 0.15s;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: #fff;
+    }
+
+    .option-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+    .option-btn:active {
+      background: #e2e8f0;
+    }
+
+    .gender-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .gender-btn {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .gender-btn.selected {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    input[type="number"] {
+      width: 120px;
+      display: block;
+      margin: 0 auto 12px;
+      padding: 10px;
+      font-size: 18px;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .error-msg {
+      color: var(--danger);
+      font-size: 13px;
+      text-align: center;
+      min-height: 18px;
+      margin-bottom: 10px;
+    }
+
+    /* Игровой экран */
+    .header-meta {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .audio-badge {
+      text-align: center;
+      font-size: 13px;
+      font-style: italic;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .seq-box {
+      background: #e2e8f0;
+      border: 1px solid #94a3b8;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .seq-title {
+      font-size: 12px;
+      color: #475569;
+      margin-bottom: 4px;
+    }
+    .seq-digits {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+    .digit-pending {
+      color: #1d4ed8;
+    }
+    .digit-done {
+      color: #16a34a;
+    }
+    .digit-arrow {
+      color: #64748b;
+      font-size: 22px;
+    }
+
+    .grid-2x2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+    .pad-btn {
+      height: 88px;
+      font-size: 28px;
+      font-weight: 700;
+      background: #ffffff;
+      color: #1e293b;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+    }
+    .pad-btn.wrong {
+      background: #f8d7da;
+      border-color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ЗАГРУЗКА -->
+    <div id="screen-loading" class="screen active">
+      <h1>Загрузка исследования...</h1>
+    </div>
+
+    <!-- 1. ПРИВЕТСТВИЕ И СОГЛАСИЕ -->
+    <div id="screen-welcome" class="screen">
+      <h1>🎧 Исследование скорости реакции</h1>
+      <div class="card">
+        Здравствуйте! Благодарим за готовность принять участие в исследовании.<br><br>
+        Вам предстоит выполнить серию из 20 коротких заданий. Вашей задачей будет нажимать на цифры в заданном порядке на фоне звуковых сигналов.<br><br>
+        <b>Ориентировочная длительность исследования:</b> 10–15 минут.<br><br>
+        Прохождение можно прервать в любой момент и продолжить позже с того же места. Все ответы записываются анонимно.<br><br>
+        Нажимая кнопку «Согласен(на)», вы подтверждаете своё согласие на участие.
+      </div>
+      <button class="btn btn-success" onclick="showScreen('screen-demo')">Согласен(на)</button>
+    </div>
+
+    <!-- 2. ПОЛ И ВОЗРАСТ -->
+    <div id="screen-demo" class="screen">
+      <h2>Несколько вопросов о вас</h2>
+      <div class="card">
+        <div style="font-weight: 600; margin-bottom: 8px;">Укажите ваш пол:</div>
+        <div class="gender-row">
+          <button type="button" class="gender-btn" id="g-m" onclick="selectGender('М')">Мужской</button>
+          <button type="button" class="gender-btn" id="g-f" onclick="selectGender('Ж')">Женский</button>
+        </div>
+        <div style="font-weight: 600; margin-bottom: 8px; text-align: center;">Укажите ваш возраст (полных лет):</div>
+        <input type="number" id="input-age" min="10" max="99" placeholder="22" />
+        <div class="error-msg" id="demo-error"></div>
+      </div>
+      <button class="btn btn-primary" onclick="submitDemographics()">Далее →</button>
+    </div>
+
+    <!-- 3. СЛУХ -->
+    <div id="screen-hearing" class="screen">
+      <h2>Есть ли у вас сейчас заложенность ушей или проблемы со слухом?</h2>
+      <button class="option-btn" onclick="selectHearing('нет')">Нет, слух в норме</button>
+      <button class="option-btn" onclick="selectHearing('легкое')">Есть лёгкие отклонения — небольшая заложенность или незначительное снижение слуха.</button>
+      <button class="option-btn" onclick="selectHearing('выраженное')">Есть выраженные нарушения — серьёзное снижение слуха или сильная заложенность.</button>
+    </div>
+
+    <!-- 4. ЗНАКОМСТВО С БОРТОВЫМИ СИСТЕМАМИ -->
+    <div id="screen-cockpit" class="screen">
+      <h2>Насколько хорошо вы знакомы с бортовыми системами оповещения и звуками кабины самолёта?</h2>
+      <button class="option-btn" onclick="selectCockpit('не_знаком')">Совсем не знаком(а)</button>
+      <button class="option-btn" onclick="selectCockpit('поверхностно')">Поверхностно знаком(а) — слышал(а) сигналы в фильмах, играх или видеороликах.</button>
+      <button class="option-btn" onclick="selectCockpit('любитель')">Знаком(а) как любитель — увлекаюсь авиацией, играю в авиасимуляторы.</button>
+      <button class="option-btn" onclick="selectCockpit('практический_опыт')">Есть практический / учебный опыт — изучал(а) системы в ВУЗе, был(а) на тренажёрах или в кабине.</button>
+    </div>
+
+    <!-- 5. УСТАЛОСТЬ -->
+    <div id="screen-fatigue" class="screen">
+      <h2>Оцените ваш текущий уровень усталости</h2>
+      <button class="option-btn" onclick="selectFatigue(1)">1 — Полон(на) сил и энергии, высокая концентрация</button>
+      <button class="option-btn" onclick="selectFatigue(2)">2 — Бодрое состояние, чувствую себя хорошо</button>
+      <button class="option-btn" onclick="selectFatigue(3)">3 — Нормальное, спокойное рабочее состояние</button>
+      <button class="option-btn" onclick="selectFatigue(4)">4 — Ощущаю небольшую усталость или сонливость</button>
+      <button class="option-btn" onclick="selectFatigue(5)">5 — Сильно устал(а), трудно удерживать внимание</button>
+    </div>
+
+    <!-- 6. ИНСТРУКЦИЯ -->
+    <div id="screen-instruction" class="screen">
+      <h1>📋 Как проходить задание</h1>
+      <div class="card">
+        1. Сверху появится строка с порядком из 4 цифр (например: <b>3 → 1 → 4 → 2</b>).<br><br>
+        2. Нажмите кнопки с этими цифрами в указанном порядке как можно быстрее и точнее.<br><br>
+        3. Правильно нажатая цифра подсветится <span style="color: #16a34a; font-weight: 700;">зелёным цветом</span> в верхней строке.<br><br>
+        4. Сначала вы пройдёте 3 тренировочных задания без звука, затем настроите комфортную громкость в наушниках и перейдёте к основной серии.
+      </div>
+      <button class="btn btn-primary" onclick="startPracticeTrial()">Перейти к тренировке (0/3) →</button>
+    </div>
+
+    <!-- 7. ОСНОВНОЕ / ТРЕНИРОВОЧНОЕ ЗАДАНИЕ -->
+    <div id="screen-task" class="screen">
+      <div class="header-meta" id="task-header"></div>
+      <div class="audio-badge" id="task-audio-badge"></div>
+      <div class="seq-box">
+        <div class="seq-title">Требуемый порядок:</div>
+        <div class="seq-digits" id="seq-digits"></div>
+      </div>
+      <div class="grid-2x2" id="pad-grid"></div>
+    </div>
+
+    <!-- 8. ВЫБОР ПОСЛЕ ТРЕНИРОВКИ -->
+    <div id="screen-practice-done" class="screen">
+      <h2 id="practice-done-title" style="color: var(--success);">✅ Тренировка выполнена!</h2>
+      <div class="card" id="practice-done-text"></div>
+      <div id="practice-buttons"></div>
+    </div>
+
+    <!-- 9. НАСТРОЙКА ГРОМКОСТИ -->
+    <div id="screen-calibration" class="screen">
+      <h1>🔊 Настройка громкости</h1>
+      <div class="card">
+        🔹 Обязательно наденьте наушники.<br><br>
+        🔹 По возможности перейдите в тихое, спокойное место.<br><br>
+        🔹 Нажмите кнопку ниже и прослушайте тестовый сигнал.<br><br>
+        🔹 Отрегулируйте громкость устройства так, чтобы звук был хорошо различим, но не вызывал дискомфорта.
+      </div>
+      <button class="btn btn-primary" onclick="playTestSound()">▶️ Прослушать тестовый сигнал</button>
+      <button class="btn btn-success" onclick="startMainExperiment()">Громкость настроена, начать исследование →</button>
+    </div>
+
+    <!-- 10. ПАУЗА МЕЖДУ ЗАДАНИЯМИ -->
+    <div id="screen-rest" class="screen">
+      <h1>⏸ Короткая пауза</h1>
+      <div class="card" style="text-align: center;">
+        <div id="rest-progress" style="font-weight: 700; margin-bottom: 12px; color: var(--primary);"></div>
+        Переведите дух и нажмите кнопку,<br>
+        когда будете готовы продолжить.
+      </div>
+      <button class="btn btn-success" onclick="runMainTrial()">Дальше →</button>
+    </div>
+  <!-- ЭКРАН ПАУЗЫ ПРИ ТАЙМАУТЕ (2 ПРОИГРЫША БЕЗ ОТВЕТА) -->
+  <div id="screen-timeout" class="screen">
+    <div class="header-meta" id="timeout-progress"></div>
+    <div class="card" style="text-align:center; padding: 26px 18px;">
+      <h2 style="margin-top:0; color: #d97706;">⏳ Время пробы истекло</h2>
+      Вы не успели завершить задание за два проигрывания сигнала.<br><br>
+      Сделайте небольшой перерыв, сосредоточьтесь и нажмите кнопку ниже, чтобы повторить это задание.
+    </div>
+    <button class="btn btn-primary" onclick="retryTimedOutTrial()">Продолжить</button>
+  </div>
+
+    <!-- 11. ФИНИШ -->
+    <div id="screen-finish" class="screen">
+      <h1 style="color: var(--success);">🏆 Второй этап завершён!</h1>
+      <div class="card" style="text-align: center;">
+        Спасибо за участие и внимание к заданиям!<br><br>
+        <b>Ваши ответы успешно сохранены.</b><br><br>
+        Теперь вы можете закрыть это окно.
+      </div>
+      <button class="btn btn-secondary" onclick="closeApp()">Закрыть окно</button>
+    </div>
+
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    const tgUser = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : {
+      id: 777777777,
+      username: "browser_test",
+      first_name: "Тестировщик"
+    };
+
+  let state = {
+    gender: null,
+    age: null,
+    hearing: null,
+    cockpit: null,
+    fatigue: null,
+    isPractice: true,
+    practiceCount: 0,
+    playlist: [],
+    currentTrialIdx: 0,
+    targetSeq: [],
+    stepIdx: 0,
+    errorsCount: 0,
+    timeoutsCount: 0,
+    audioPlayCount: 0,
+    startTime: 0
+  };
+
+    let currentAudio = null;
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+  function stopAudio() {
+    if (currentAudio) {
+      currentAudio.onended = null;
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
+  }
+
+  function playSound(filename, isTrial = false) {
+    stopAudio();
+    currentAudio = new Audio('/sounds/' + encodeURIComponent(filename));
+
+    if (isTrial) {
+      state.audioPlayCount = 1;
+      currentAudio.onended = () => {
+        // Если задание всё еще активно и звук проиграл только 1 раз — запускаем 2-й раз
+        if (!state.isPractice && state.stepIdx < state.targetSeq.length) {
+          if (state.audioPlayCount === 1) {
+            state.audioPlayCount = 2;
+            const audioBadgeEl = document.getElementById('task-audio-badge');
+            audioBadgeEl.textContent = '🔈 Повторное воспроизведение сигнала (2/2)...';
+            audioBadgeEl.style.color = '#d97706';
+            currentAudio.currentTime = 0;
+            currentAudio.play().catch(err => console.warn('Replay prevented:', err));
+          } else {
+            // Закончился 2-й проигрыш, а задание так и не выполнено -> экран перерыва
+            stopAudio();
+            state.timeoutsCount += 1;
+            document.getElementById('timeout-progress').textContent =
+              `Испытание №${state.currentTrialIdx + 1} из ${state.playlist.length}`;
+            showScreen('screen-timeout');
+          }
+        }
+      };
+    }
+
+    currentAudio.play().catch(err => console.warn('Audio play prevented:', err));
+  }
+
+  function playTestSound() {
+    playSound('Test sound.mp3', false);
+  }
+
+  function runMainTrial() {
+    if (state.currentTrialIdx >= state.playlist.length) {
+      stopAudio();
+      showScreen('screen-finish');
+      return;
+    }
+    state.timeoutsCount = 0;
+    setupTaskScreen();
+  }
+
+  function retryTimedOutTrial() {
+    // Повторяем ту же самую непройденную задачу (currentTrialIdx не меняем, timeoutsCount сохраняем)
+    setupTaskScreen();
+  }
+
+    // Инициализация пользователя при открытии
+    async function initApp() {
+      try {
+        const resp = await fetch('/api/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: tgUser.id,
+            username: tgUser.username || '',
+            first_name: tgUser.first_name || ''
+          })
+        });
+        const data = await resp.json();
+        state.playlist = data.playlist;
+        state.currentTrialIdx = data.completed_count;
+        state.practiceCount = data.practice_count;
+
+        if (data.completed_count >= data.playlist.length && data.playlist.length > 0) {
+          showScreen('screen-finish');
+        } else if (data.profile_completed && data.completed_count > 0) {
+          // Пользователь прервал тест и вернулся — продолжаем с того же места через настройку звука
+          showScreen('screen-calibration');
+        } else if (data.profile_completed) {
+          showScreen('screen-instruction');
+        } else {
+          showScreen('screen-welcome');
+        }
+      } catch (e) {
+        showScreen('screen-welcome');
+      }
+    }
+
+    // Анкета
+    function selectGender(g) {
+      state.gender = g;
+      document.getElementById('g-m').classList.toggle('selected', g === 'М');
+      document.getElementById('g-f').classList.toggle('selected', g === 'Ж');
+    }
+
+    function submitDemographics() {
+      const ageVal = parseInt(document.getElementById('input-age').value, 10);
+      const errEl = document.getElementById('demo-error');
+      if (!state.gender) {
+        errEl.textContent = 'Пожалуйста, выберите ваш пол.';
+        return;
+      }
+      if (isNaN(ageVal) || ageVal < 10 || ageVal > 99) {
+        errEl.textContent = 'Введите корректный возраст (от 10 до 99 лет).';
+        return;
+      }
+      errEl.textContent = '';
+      state.age = ageVal;
+      showScreen('screen-hearing');
+    }
+
+    function selectHearing(val) {
+      state.hearing = val;
+      showScreen('screen-cockpit');
+    }
+
+    function selectCockpit(val) {
+      state.cockpit = val;
+      showScreen('screen-fatigue');
+    }
+
+    async function selectFatigue(val) {
+      state.fatigue = val;
+      await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: tgUser.id,
+          gender: state.gender,
+          age: state.age,
+          hearing_status: state.hearing,
+          cockpit_familiarity: state.cockpit,
+          fatigue_level: state.fatigue
+        })
+      });
+      showScreen('screen-instruction');
+    }
+
+    // Тренировка и основная задача
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function startPracticeTrial() {
+      state.isPractice = true;
+      state.practiceCount += 1;
+      setupTaskScreen();
+    }
+
+    async function goToCalibration() {
+      await fetch('/api/practice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: tgUser.id,
+          practice_count: state.practiceCount
+        })
+      });
+      showScreen('screen-calibration');
+    }
+
+    function startMainExperiment() {
+      stopAudio();
+      state.isPractice = false;
+      runMainTrial();
+    }
+
+    function runMainTrial() {
+      if (state.currentTrialIdx >= state.playlist.length) {
+        stopAudio();
+        showScreen('screen-finish');
+        return;
+      }
+      setupTaskScreen();
+    }
+
+    function setupTaskScreen() {
+      state.errorsCount = 0;
+      state.stepIdx = 0;
+      state.targetSeq = shuffle([1, 2, 3, 4]);
+
+      const headerEl = document.getElementById('task-header');
+      const audioBadgeEl = document.getElementById('task-audio-badge');
+
+      if (state.isPractice) {
+        headerEl.textContent = `🛠 Тренировочное задание №${state.practiceCount}`;
+        audioBadgeEl.textContent = '🔇 Тренировка: без звука — освойте нажатие кнопок';
+        audioBadgeEl.style.color = '#64748b';
+      } else {
+        const soundName = state.playlist[state.currentTrialIdx];
+        headerEl.textContent = `Испытание №${state.currentTrialIdx + 1} из ${state.playlist.length}`;
+        audioBadgeEl.textContent = '🔈 Воспроизводится звуковой сигнал...';
+        audioBadgeEl.style.color = '#007bff';
+        playSound(soundName, true);
+      }
+
+      renderSequence();
+      renderPad();
+      showScreen('screen-task');
+      state.startTime = performance.now();
+    }
+
+    function renderSequence() {
+      const container = document.getElementById('seq-digits');
+      container.innerHTML = '';
+      state.targetSeq.forEach((num, idx) => {
+        const span = document.createElement('span');
+        span.textContent = num;
+        span.className = idx < state.stepIdx ? 'digit-done' : 'digit-pending';
+        container.appendChild(span);
+
+        if (idx < state.targetSeq.length - 1) {
+          const arrow = document.createElement('span');
+          arrow.textContent = ' → ';
+          arrow.className = 'digit-arrow';
+          container.appendChild(arrow);
+        }
+      });
+    }
+
+    function renderPad() {
+      const grid = document.getElementById('pad-grid');
+      grid.innerHTML = '';
+      const labels = shuffle([1, 2, 3, 4]);
+      labels.forEach(num => {
+        const btn = document.createElement('button');
+        btn.className = 'pad-btn';
+        btn.textContent = num;
+        btn.onclick = () => handlePadClick(num, btn);
+        grid.appendChild(btn);
+      });
+    }
+
+  async function handlePadClick(num, btnEl) {
+    const expected = state.targetSeq[state.stepIdx];
+    if (num === expected) {
+      state.stepIdx += 1;
+      renderSequence();
+
+      if (state.stepIdx >= state.targetSeq.length) {
+        // Сразу останавливаем звук и отключаем onended, чтобы таймер не сработал во время сохранения
+        stopAudio();
+        const totalTime = Number(((performance.now() - state.startTime) / 1000).toFixed(3));
+
+        if (state.isPractice) {
+          showPracticeDone();
+        } else {
+          const soundName = state.playlist[state.currentTrialIdx];
+          await fetch('/api/result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: tgUser.id,
+              trial_index: state.currentTrialIdx + 1,
+              sound_id: soundName,
+              target_sequence: state.targetSeq.join(','),
+              execution_time: totalTime,
+              errors_count: state.errorsCount,
+              timeouts_count: state.timeoutsCount
+            })
+          });
+
+          state.currentTrialIdx += 1;
+          if (state.currentTrialIdx >= state.playlist.length) {
+            showScreen('screen-finish');
+          } else {
+            document.getElementById('rest-progress').textContent =
+              `Прогресс: ${state.currentTrialIdx} из ${state.playlist.length}`;
+            showScreen('screen-rest');
+          }
+        }
+      }
+    } else {
+      state.errorsCount += 1;
+      btnEl.classList.add('wrong');
+      setTimeout(() => btnEl.classList.remove('wrong'), 150);
+    }
+  }
+
+    function showPracticeDone() {
+      const minPractice = 3;
+      document.getElementById('practice-done-title').textContent =
+        `✅ Тренировка №${state.practiceCount} выполнена!`;
+      const textEl = document.getElementById('practice-done-text');
+      const btnsEl = document.getElementById('practice-buttons');
+      btnsEl.innerHTML = '';
+
+      if (state.practiceCount < minPractice) {
+        const rem = minPractice - state.practiceCount;
+        textEl.textContent =
+          `Чтобы привыкнуть к кнопкам, выполните еще ${rem} тренировочных задания без звука.`;
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'btn btn-primary';
+        nextBtn.textContent = `Продолжить тренировку (${state.practiceCount}/${minPractice})`;
+        nextBtn.onclick = startPracticeTrial;
+        btnsEl.appendChild(nextBtn);
+      } else {
+        textEl.innerHTML =
+          'Обязательная тренировка пройдена!<br><br>' +
+          'Вы можете сделать еще одну попытку без звука или перейти к настройке громкости перед основной частью.';
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'btn btn-secondary';
+        retryBtn.textContent = 'Попробовать ещё тестовое задание';
+        retryBtn.onclick = startPracticeTrial;
+        btnsEl.appendChild(retryBtn);
+
+        const mainBtn = document.createElement('button');
+        mainBtn.className = 'btn btn-success';
+        mainBtn.textContent = 'Всё понятно, перейти к настройке звука →';
+        mainBtn.onclick = goToCalibration;
+        btnsEl.appendChild(mainBtn);
+      }
+      showScreen('screen-practice-done');
+    }
+
+    function closeApp() {
+      tg.close();
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
